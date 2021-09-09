@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"slack-bot/internal/model"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/djimenez/iconv-go"
@@ -60,14 +61,24 @@ func (e *ExchangeRateImpl) GetExchangerRate() (*model.ExchangeRate, error) {
 	}
 
 	// 은행 정보 및 날짜
-	info := doc.Find(".exchange_info")
-	date, bank := getBackandDate(info)
-
+	date, bank := getBackandDate(doc)
 	log.Println("date,bank", date, bank)
+
+	// KRW
+	KRW := getKRW(doc)
+	log.Println("KRW", KRW)
+
+	// prev compareData
+	compareData := getPrevDayCompreData(doc)
+	log.Println("compareData", compareData)
+
 	return nil, nil
 }
 
-func getBackandDate(selection *goquery.Selection) (string, string) {
+// getBackandDate get bank info and date
+func getBackandDate(doc *goquery.Document) (string, string) {
+	selection := doc.Find(".exchange_info")
+
 	// find date
 	date := selection.Find(".date").Text()
 
@@ -75,4 +86,45 @@ func getBackandDate(selection *goquery.Selection) (string, string) {
 	bank := selection.Find(".standard").Text()
 
 	return date, bank
+}
+
+func getKRW(doc *goquery.Document) string {
+	selection := doc.Find(".no_today")
+
+	// get KRW (숫자)
+	// remove line break
+	krwSelection := selection.Find(".no_up > .no_up")
+	krw := strings.ReplaceAll(krwSelection.Text(), "\n", "")
+
+	// trim
+	krw = strings.Trim(krw, " ")
+
+	// 단위
+	unit := selection.Find(".txt_won").Text()
+
+	return krw + unit
+}
+
+func getPrevDayCompreData(doc *goquery.Document) string {
+	selection := doc.Find(".no_exday")
+
+	// get text
+	text := selection.Find(".txt_comparison").Text()
+	log.Println("text", text)
+
+	var compareData string
+
+	// get compare prev
+	selection.Find(".no_up").Each(func(i int, s *goquery.Selection) {
+		compareData += s.Text()
+	})
+
+	// remove line break
+	compareData = strings.ReplaceAll(compareData, "\n", "")
+
+	// remove white space
+	compareData = strings.ReplaceAll(compareData, " ", "")
+
+	// trim and return
+	return strings.Trim(compareData, " ")
 }
