@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"slack-bot/internal/model"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/djimenez/iconv-go"
@@ -72,6 +73,12 @@ func (e *ExchangeRateImpl) GetExchangerRate() (*model.ExchangeRate, error) {
 	compareData := getPrevDayCompreData(doc)
 	log.Println("compareData", compareData)
 
+	// transfer
+	transferKWR := getTransferKWR(doc)
+	log.Println("transferKWR", transferKWR)
+
+	URL := getGraphURL(doc)
+	log.Println("URL", URL)
 	return nil, nil
 }
 
@@ -93,7 +100,7 @@ func getKRW(doc *goquery.Document) string {
 
 	// get KRW (숫자)
 	// remove line break
-	krwSelection := selection.Find(".no_up > .no_up")
+	krwSelection := selection.Find("em > em")
 	krw := strings.ReplaceAll(krwSelection.Text(), "\n", "")
 
 	// trim
@@ -115,7 +122,7 @@ func getPrevDayCompreData(doc *goquery.Document) string {
 	var compareData string
 
 	// get compare prev
-	selection.Find(".no_up").Each(func(i int, s *goquery.Selection) {
+	selection.Find("em").Each(func(i int, s *goquery.Selection) {
 		compareData += s.Text()
 	})
 
@@ -127,4 +134,34 @@ func getPrevDayCompreData(doc *goquery.Document) string {
 
 	// trim and return
 	return strings.Trim(compareData, " ")
+}
+
+func getTransferKWR(doc *goquery.Document) string {
+	selection := doc.Find(".th_ex4")
+
+	//get text (송금 보내실 때)
+	text := selection.Text()
+
+	// get transferKWR
+	KWR := selection.Next().Text()
+
+	// process string && return
+	return text + " " + KWR + "원"
+}
+
+func getGraphURL(doc *goquery.Document) string {
+	selection := doc.Find(".flash_area > img")
+
+	//get graph URL
+	URL, isEixst := selection.Attr("src")
+	if !isEixst {
+		logrus.Errorf("could not load imagePath")
+		return ""
+	}
+
+	// 57 == month string index
+	URL = strings.Replace(URL, "month3", "month", 57)
+
+	//processing URL (Add query String)
+	return URL + "?sidcode=" + string(time.Now().Format("20060102"))
 }
