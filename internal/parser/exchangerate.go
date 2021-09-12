@@ -41,6 +41,8 @@ func (e *ExchangeRateImpl) GetExchangerRate() (*model.ExchangeRate, error) {
 	}
 	defer resp.Body.Close()
 
+	rate := &model.ExchangeRate{}
+
 	// check http status
 	if resp.StatusCode != http.StatusOK {
 		errMsg := fmt.Sprintf("response status code error status:%s, statuscode:%d", resp.Status, resp.StatusCode)
@@ -65,21 +67,28 @@ func (e *ExchangeRateImpl) GetExchangerRate() (*model.ExchangeRate, error) {
 	date, bank := getBackandDate(doc)
 	log.Println("date,bank", date, bank)
 
+	rate.Date, rate.Bank = date, bank
+
 	// KRW
 	KRW := getKRW(doc)
 	log.Println("KRW", KRW)
+	rate.KRW = KRW
 
 	// prev compareData
 	compareData := getPrevDayCompreData(doc)
 	log.Println("compareData", compareData)
+	rate.DtD = compareData
 
 	// transfer
 	transferKWR := getTransferKWR(doc)
 	log.Println("transferKWR", transferKWR)
+	rate.TransferKWR = transferKWR
 
 	URL := getGraphURL(doc)
 	log.Println("URL", URL)
-	return nil, nil
+	rate.ImageURL = URL
+
+	return rate, nil
 }
 
 // getBackandDate get bank info and date
@@ -117,7 +126,6 @@ func getPrevDayCompreData(doc *goquery.Document) string {
 
 	// get text
 	text := selection.Find(".txt_comparison").Text()
-	log.Println("text", text)
 
 	var compareData string
 
@@ -133,7 +141,14 @@ func getPrevDayCompreData(doc *goquery.Document) string {
 	compareData = strings.ReplaceAll(compareData, " ", "")
 
 	// trim and return
-	return strings.Trim(compareData, " ")
+	compareData = strings.Trim(compareData, " ")
+
+	// append sign
+	if strings.Contains(compareData, "-") {
+		return text + " -" + compareData
+	}
+
+	return text + " +" + compareData
 }
 
 func getTransferKWR(doc *goquery.Document) string {
