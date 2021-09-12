@@ -6,11 +6,13 @@ import (
 	"log"
 	"net/http"
 	"slack-bot/internal/model"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/djimenez/iconv-go"
+	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 )
 
@@ -110,7 +112,7 @@ func getKRW(doc *goquery.Document) string {
 	// get KRW (숫자)
 	// remove line break
 	krwSelection := selection.Find("em > em")
-	krw := strings.ReplaceAll(krwSelection.Text(), "\n", "")
+	krw := strings.Replace(krwSelection.Text(), "\n", "", -1)
 
 	// trim
 	krw = strings.Trim(krw, " ")
@@ -135,13 +137,16 @@ func getPrevDayCompreData(doc *goquery.Document) string {
 	})
 
 	// remove line break
-	compareData = strings.ReplaceAll(compareData, "\n", "")
+	compareData = strings.Replace(compareData, "\n", "", -1)
 
 	// remove white space
-	compareData = strings.ReplaceAll(compareData, " ", "")
+	compareData = strings.Replace(compareData, " ", "", -1)
 
 	// trim and return
 	compareData = strings.Trim(compareData, " ")
+
+	// append "원"
+	compareData = strings.Replace(compareData, "(", "원(", -1)
 
 	// append sign
 	if strings.Contains(compareData, "-") {
@@ -160,8 +165,31 @@ func getTransferKWR(doc *goquery.Document) string {
 	// get transferKWR
 	KWR := selection.Next().Text()
 
+	// get Preference
+	strings.Split(KWR, ".")
+	Preference, _ := getPreference(KWR)
+	log.Println("pre", Preference)
+
 	// process string && return
-	return text + " " + KWR + "원"
+	return text + ": " + KWR + "원"
+}
+
+func getPreference(KWR string) (string, error) {
+	// separation essence, decimal
+	arr := strings.Split(KWR, ".")
+	essenceString := strings.Replace(arr[0], ",", "", -1)
+	decimalString := arr[1]
+
+	// get Preference
+	essence, err := strconv.ParseInt(essenceString, 10, 64)
+	if err != nil {
+		logrus.Errorf("could not parse int essence error:%v", err)
+		return "", nil
+	}
+	essence -= 6
+	essenceString = humanize.Comma(essence)
+
+	return "우대 환율: " + essenceString + "." + decimalString + "원", nil
 }
 
 func getGraphURL(doc *goquery.Document) string {
@@ -174,8 +202,8 @@ func getGraphURL(doc *goquery.Document) string {
 		return ""
 	}
 
-	// 57 == month string index
-	URL = strings.Replace(URL, "month3", "month", 57)
+	// // 57 == month string index
+	// URL = strings.Replace(URL, "month3", "month", 57)
 
 	//processing URL (Add query String)
 	return URL + "?sidcode=" + string(time.Now().Format("20060102"))
