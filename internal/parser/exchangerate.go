@@ -159,19 +159,14 @@ func getPrevDayCompreData(doc *goquery.Document) string {
 func getTransferKWR(doc *goquery.Document) string {
 	selection := doc.Find(".th_ex4")
 
-	//get text (송금 보내실 때)
-	text := selection.Text()
-
 	// get transferKWR
 	KWR := selection.Next().Text()
 
 	// get Preference
-	strings.Split(KWR, ".")
 	Preference, _ := getPreference(KWR)
-	log.Println("pre", Preference)
 
 	// process string && return
-	return text + ": " + KWR + "원"
+	return Preference
 }
 
 func getPreference(KWR string) (string, error) {
@@ -189,7 +184,7 @@ func getPreference(KWR string) (string, error) {
 	essence -= 6
 	essenceString = humanize.Comma(essence)
 
-	return "우대 환율: " + essenceString + "." + decimalString + "원", nil
+	return essenceString + "." + decimalString + "원", nil
 }
 
 func getGraphURL(doc *goquery.Document) string {
