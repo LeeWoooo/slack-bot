@@ -24,9 +24,8 @@ func TestGetExchangerRate(t *testing.T) {
 
 	//givne
 	//when
-	exchangeRate, err := NewExchangeRate().GetExchangerRate()
+	_, err := NewExchangeRate().GetExchangerRate()
 
 	//then
-	assert.Nil(exchangeRate)
 	assert.NoError(err)
 }
