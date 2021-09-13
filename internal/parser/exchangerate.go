@@ -6,11 +6,13 @@ import (
 	"log"
 	"net/http"
 	"slack-bot/internal/model"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/djimenez/iconv-go"
+	"github.com/dustin/go-humanize"
 	"github.com/sirupsen/logrus"
 )
 
@@ -41,6 +43,8 @@ func (e *ExchangeRateImpl) GetExchangerRate() (*model.ExchangeRate, error) {
 	}
 	defer resp.Body.Close()
 
+	rate := &model.ExchangeRate{}
+
 	// check http status
 	if resp.StatusCode != http.StatusOK {
 		errMsg := fmt.Sprintf("response status code error status:%s, statuscode:%d", resp.Status, resp.StatusCode)
@@ -65,21 +69,28 @@ func (e *ExchangeRateImpl) GetExchangerRate() (*model.ExchangeRate, error) {
 	date, bank := getBackandDate(doc)
 	log.Println("date,bank", date, bank)
 
+	rate.Date, rate.Bank = date, bank
+
 	// KRW
 	KRW := getKRW(doc)
 	log.Println("KRW", KRW)
+	rate.KRW = KRW
 
 	// prev compareData
 	compareData := getPrevDayCompreData(doc)
 	log.Println("compareData", compareData)
+	rate.DtD = compareData
 
 	// transfer
 	transferKWR := getTransferKWR(doc)
 	log.Println("transferKWR", transferKWR)
+	rate.TransferKWR = transferKWR
 
 	URL := getGraphURL(doc)
 	log.Println("URL", URL)
-	return nil, nil
+	rate.ImageURL = URL
+
+	return rate, nil
 }
 
 // getBackandDate get bank info and date
@@ -101,7 +112,7 @@ func getKRW(doc *goquery.Document) string {
 	// get KRW (숫자)
 	// remove line break
 	krwSelection := selection.Find("em > em")
-	krw := strings.ReplaceAll(krwSelection.Text(), "\n", "")
+	krw := strings.Replace(krwSelection.Text(), "\n", "", -1)
 
 	// trim
 	krw = strings.Trim(krw, " ")
@@ -117,7 +128,6 @@ func getPrevDayCompreData(doc *goquery.Document) string {
 
 	// get text
 	text := selection.Find(".txt_comparison").Text()
-	log.Println("text", text)
 
 	var compareData string
 
@@ -127,26 +137,54 @@ func getPrevDayCompreData(doc *goquery.Document) string {
 	})
 
 	// remove line break
-	compareData = strings.ReplaceAll(compareData, "\n", "")
+	compareData = strings.Replace(compareData, "\n", "", -1)
 
 	// remove white space
-	compareData = strings.ReplaceAll(compareData, " ", "")
+	compareData = strings.Replace(compareData, " ", "", -1)
 
 	// trim and return
-	return strings.Trim(compareData, " ")
+	compareData = strings.Trim(compareData, " ")
+
+	// append "원"
+	compareData = strings.Replace(compareData, "(", "원(", -1)
+
+	// append sign
+	if strings.Contains(compareData, "-") {
+		return text + " -" + compareData
+	}
+
+	return text + " +" + compareData
 }
 
 func getTransferKWR(doc *goquery.Document) string {
 	selection := doc.Find(".th_ex4")
 
-	//get text (송금 보내실 때)
-	text := selection.Text()
-
 	// get transferKWR
 	KWR := selection.Next().Text()
 
+	// get Preference
+	Preference, _ := getPreference(KWR)
+
 	// process string && return
-	return text + " " + KWR + "원"
+	return Preference
+}
+
+func getPreference(KWR string) (string, error) {
+	// separation essence, decimal
+	arr := strings.Split(KWR, ".")
+	essenceString := strings.Replace(arr[0], ",", "", -1)
+	decimalString := arr[1]
+
+	// get Preference
+	essence, err := strconv.ParseInt(essenceString, 10, 64)
+	if err != nil {
+		logrus.Errorf("could not parse int essence error:%v", err)
+		return "", nil
+	}
+	essence -= 6
+	essenceString = humanize.Comma(essence)
+
+	return essenceString + "." + decimalString + "원", nil
 }
 
 func getGraphURL(doc *goquery.Document) string {
@@ -159,8 +197,8 @@ func getGraphURL(doc *goquery.Document) string {
 		return ""
 	}
 
-	// 57 == month string index
-	URL = strings.Replace(URL, "month3", "month", 57)
+	// // 57 == month string index
+	// URL = strings.Replace(URL, "month3", "month", 57)
 
 	//processing URL (Add query String)
 	return URL + "?sidcode=" + string(time.Now().Format("20060102"))
