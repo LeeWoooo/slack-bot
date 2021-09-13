@@ -42,10 +42,10 @@ func (s *SlackBotImpl) SendTransfer() error {
 	}
 
 	// get slack api
-	api := slack.New("")
+	api := slack.New(" ")
 
 	channelID, timeStamp, err := api.PostMessage(
-		"",
+		" ",
 		slack.MsgOptionText("", false),
 		slack.MsgOptionAttachments(attachment),
 		slack.MsgOptionAsUser(false),

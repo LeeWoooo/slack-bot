@@ -13,7 +13,7 @@ const format = "%s %s 기준 환율 보고 드립니다.\n1$당 KWR(원화)는 %
 
 func TestSendMessage(t *testing.T) {
 	//
-	api := slack.New("")
+	api := slack.New(" ")
 
 	td, _ := parser.NewExchangeRate().GetExchangerRate()
 
@@ -25,7 +25,7 @@ func TestSendMessage(t *testing.T) {
 	}
 
 	channelID, timeStamp, err := api.PostMessage(
-		"",
+		" ",
 		slack.MsgOptionText("", false),
 		slack.MsgOptionAttachments(att),
 		slack.MsgOptionAsUser(false),
