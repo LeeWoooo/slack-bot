@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"slack-bot/internal/bot"
@@ -29,6 +31,23 @@ func main() {
 		}
 	})
 	c.Start()
+
+	//for heroku
+	mux := http.NewServeMux()
+
+	srv := &http.Server{
+		Addr:    ":" + os.Getenv("PORT"),
+		Handler: mux,
+	}
+
+	// Initializing the server in a goroutine so that
+	// it won't block the graceful shutdown handling below
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+			logrus.Fatalf("listen: %s\n", err)
+		}
+	}()
+
 	// Wait for interrupt signal to gracefully shutdown the server with
 	// a timeout of 5 seconds.
 	logrus.Info("starting slack bot...")
