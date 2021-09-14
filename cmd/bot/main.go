@@ -26,7 +26,7 @@ func main() {
 	c := cron.New(cron.WithLocation(l))
 
 	// 매년 매월 월요일~금요일 아침 9시 15분
-	c.AddFunc("55 1 * * *", func() {
+	c.AddFunc("15 9 * * *", func() {
 		err := bot.SendTransfer()
 		if err != nil {
 			log.Fatal(err)
