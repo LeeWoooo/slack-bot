@@ -3,6 +3,7 @@ package bot
 import (
 	"fmt"
 	"log"
+	"os"
 	"slack-bot/internal/parser"
 
 	"github.com/sirupsen/logrus"
@@ -42,10 +43,10 @@ func (s *SlackBotImpl) SendTransfer() error {
 	}
 
 	// get slack api
-	api := slack.New(" ")
+	api := slack.New(os.Getenv("SLACK_BOT_TOKEN"))
 
 	channelID, timeStamp, err := api.PostMessage(
-		" ",
+		os.Getenv("SLACK_BOT_CHANNEL"),
 		slack.MsgOptionText("", false),
 		slack.MsgOptionAttachments(attachment),
 		slack.MsgOptionAsUser(false),
