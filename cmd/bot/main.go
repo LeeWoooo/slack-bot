@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -24,7 +23,7 @@ func main() {
 	// create cron
 	c := cron.New()
 	// 매년 매월 월요일~금요일 아침 9시 15분
-	c.AddFunc("20 1 * * MON-FRI", func() {
+	c.AddFunc("25 1 * * MON-FRI", func() {
 		err := bot.SendTransfer()
 		if err != nil {
 			log.Fatal(err)
@@ -43,7 +42,7 @@ func main() {
 	// Initializing the server in a goroutine so that
 	// it won't block the graceful shutdown handling below
 	go func() {
-		if err := srv.ListenAndServe(); err != nil && errors.Is(err, http.ErrServerClosed) {
+		if err := srv.ListenAndServe(); err != nil {
 			logrus.Fatalf("listen: %s\n", err)
 		}
 	}()
