@@ -23,7 +23,7 @@ func main() {
 	// create cron
 	c := cron.New()
 	// 매년 매월 월요일~금요일 아침 9시 15분
-	c.AddFunc("25 1 * * MON-FRI", func() {
+	c.AddFunc("@every  1s", func() {
 		err := bot.SendTransfer()
 		if err != nil {
 			log.Fatal(err)
