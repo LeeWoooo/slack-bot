@@ -31,9 +31,12 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		log.Println("1")
 	})
+
+	c.AddFunc("@every 10m", func() {
+		bot.PreventIdling()
+	})
+
 	c.Start()
 
 	//for heroku

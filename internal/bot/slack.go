@@ -3,6 +3,7 @@ package bot
 import (
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"slack-bot/internal/parser"
 
@@ -13,6 +14,7 @@ import (
 // SlackBot interface
 type SlackBot interface {
 	SendTransfer() error
+	PreventIdling()
 }
 
 // SlackBotImpl implement SlackBot
@@ -57,4 +59,12 @@ func (s *SlackBotImpl) SendTransfer() error {
 
 	logrus.Infof("Message successfully sent to channel %s at %s", channelID, timeStamp)
 	return nil
+}
+
+// PreventIdling prevent heroku sleep
+func (s *SlackBotImpl) PreventIdling() {
+	URL := os.Getenv("HEROKU_URL")
+	http.Get(URL)
+
+	log.Println("Don't sleep HEROKU application")
 }
