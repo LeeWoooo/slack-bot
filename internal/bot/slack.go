@@ -14,7 +14,7 @@ import (
 // SlackBot interface
 type SlackBot interface {
 	SendTransfer() error
-	PreventIdling()
+	PreventSleeping()
 }
 
 // SlackBotImpl implement SlackBot
@@ -61,8 +61,8 @@ func (s *SlackBotImpl) SendTransfer() error {
 	return nil
 }
 
-// PreventIdling prevent heroku sleep
-func (s *SlackBotImpl) PreventIdling() {
+// PreventSleeping prevent heroku sleep
+func (s *SlackBotImpl) PreventSleeping() {
 	URL := os.Getenv("HEROKU_URL")
 	http.Get(URL)
 

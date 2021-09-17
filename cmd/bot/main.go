@@ -25,7 +25,7 @@ func main() {
 	l, _ := time.LoadLocation("Asia/Seoul")
 	c := cron.New(cron.WithLocation(l))
 
-	// 매년 매월 월요일~금요일 아침 9시 15분
+	// every year every month Mon~Fri AM 9 : 15
 	c.AddFunc("15 9 * * *", func() {
 		err := bot.SendTransfer()
 		if err != nil {
@@ -33,8 +33,9 @@ func main() {
 		}
 	})
 
+	// every 10m request
 	c.AddFunc("@every 10m", func() {
-		bot.PreventIdling()
+		bot.PreventSleeping()
 	})
 
 	c.Start()
