@@ -8,6 +8,7 @@ import (
 	"slack-bot/internal/model"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
@@ -43,8 +44,6 @@ func (e *ExchangeRateImpl) GetExchangerRate() (*model.ExchangeRate, error) {
 	}
 	defer resp.Body.Close()
 
-	rate := &model.ExchangeRate{}
-
 	// check http status
 	if resp.StatusCode != http.StatusOK {
 		errMsg := fmt.Sprintf("response status code error status:%s, statuscode:%d", resp.Status, resp.StatusCode)
@@ -65,31 +64,48 @@ func (e *ExchangeRateImpl) GetExchangerRate() (*model.ExchangeRate, error) {
 		return nil, err
 	}
 
-	// 은행 정보 및 날짜
-	date, bank := getBackandDate(doc)
-	log.Println("date,bank", date, bank)
+	// return instance
+	rate := &model.ExchangeRate{}
 
-	rate.Date, rate.Bank = date, bank
+	// 고루틴을 이용한 Data가져오기
+	var wg sync.WaitGroup
+	wg.Add(5)
+
+	// 은행 정보 및 날짜
+	go func() {
+		defer wg.Done()
+		date, bank := getBackandDate(doc)
+		rate.Date, rate.Bank = date, bank
+	}()
 
 	// KRW
-	KRW := getKRW(doc)
-	log.Println("KRW", KRW)
-	rate.KRW = KRW
+	go func() {
+		defer wg.Done()
+		rate.KRW = getKRW(doc)
+	}()
 
 	// prev compareData
-	compareData := getPrevDayCompreData(doc)
-	log.Println("compareData", compareData)
-	rate.DtD = compareData
+	go func() {
+		defer wg.Done()
+		rate.DtD = getPrevDayCompreData(doc)
+	}()
 
 	// transfer
-	transferKWR := getTransferKWR(doc)
-	log.Println("transferKWR", transferKWR)
-	rate.TransferKWR = transferKWR
+	go func() {
+		defer wg.Done()
+		rate.TransferKWR = getTransferKWR(doc)
+	}()
+	// transferKWR := getTransferKWR(doc)
+	// log.Println("transferKWR", transferKWR)
+	// rate.TransferKWR = transferKWR
 
-	URL := getGraphURL(doc)
-	log.Println("URL", URL)
-	rate.ImageURL = URL
+	go func() {
+		defer wg.Done()
+		rate.ImageURL = getGraphURL(doc)
+	}()
 
+	wg.Wait()
+	log.Println("rate", rate)
 	return rate, nil
 }
 
@@ -197,8 +213,11 @@ func getGraphURL(doc *goquery.Document) string {
 		return ""
 	}
 
-	// // 57 == month string index
-	// URL = strings.Replace(URL, "month3", "month", 57)
+	/*
+		When you need graph month3
+		57 == month string index
+		URL = strings.Replace(URL, "month3", "month", 57)
+	*/
 
 	//processing URL (Add query String)
 	return URL + "?sidcode=" + string(time.Now().Format("20060102"))
