@@ -26,7 +26,7 @@ func main() {
 	c := cron.New(cron.WithLocation(l))
 
 	// every year every month Mon~Fri AM 9 : 15
-	c.AddFunc("15 9 * * *", func() {
+	c.AddFunc("15 9 * * MON-FRI", func() {
 		err := bot.SendTransfer()
 		if err != nil {
 			log.Fatal(err)
