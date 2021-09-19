@@ -35,7 +35,7 @@ func (s *SlackBotImpl) SendTransfer() error {
 	}
 
 	// make text with format
-	format := "%s %s 기준 환율 보고 드립니다.\n1$당 KWR(원화)는 %s이며 %s 입니다.\n 해외 송금 기준 %s 입니다.(우대 환율 적용)\n"
+	format := "%s %s 기준 환율 보고 드립니다.\n1$당 KWR(원화)는 %s원 이며 전일대비 %s입니다.\n 해외 송금 기준 %s 입니다.(우대 환율 적용)\n"
 	text := fmt.Sprintf(format, td.Date, td.Bank, td.KRW, td.DtD, td.TransferKWR)
 
 	attachment := slack.Attachment{
