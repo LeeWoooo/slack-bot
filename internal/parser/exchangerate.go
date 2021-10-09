@@ -133,17 +133,11 @@ func getKRW(doc *goquery.Document) string {
 	// trim
 	krw = strings.Trim(krw, " ")
 
-	// 단위
-	unit := selection.Find(".txt_won").Text()
-
-	return krw + unit
+	return krw
 }
 
 func getPrevDayCompreData(doc *goquery.Document) string {
 	selection := doc.Find(".no_exday")
-
-	// get text
-	text := selection.Find(".txt_comparison").Text()
 
 	var compareData string
 
@@ -161,15 +155,20 @@ func getPrevDayCompreData(doc *goquery.Document) string {
 	// trim and return
 	compareData = strings.Trim(compareData, " ")
 
+	log.Println("원 더하기전", compareData, len(compareData))
+
 	// append "원"
+	// TODO: append를 하면서 이상해졌군 ( 가  Replace 하면 3자리 잡아먹음
 	compareData = strings.Replace(compareData, "(", "원(", -1)
+
+	log.Println("원 더하기후", compareData, len(compareData))
 
 	// append sign
 	if strings.Contains(compareData, "-") {
-		return text + " -" + compareData
+		return "-" + compareData
 	}
 
-	return text + " +" + compareData
+	return "+" + compareData
 }
 
 func getTransferKWR(doc *goquery.Document) string {
